@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+   <modelVersion>4.0.0</modelVersion>
+   <artifactId>d3-kibble</artifactId>
+   <groupId>com.mis</groupId>
+   <version>1.0.0-SNAPSHOT</version>
+   <url>https://github.com/curtisallen/d3-kibble</url>
+   <name>D3 Graph Kibble: Kibble made for D3.js visulation</name>
+   <description>Rexter Extension for D3.js</description>
+   <inceptionYear>2013</inceptionYear>
+   <contributors>
+    <contributor>
+        <name>Curtis Allen</name>
+        <email>curtis.n.allen+github@gmail.com</email>
+        <url>http://www.curtisnallen.com</url>
+    </contributor>
+</contributors>
+<properties>
+    <jersey-version>1.8</jersey-version>
+    <slf4j-version>1.7.1</slf4j-version>
+    <tinkerpop.version>2.3.1</tinkerpop.version>
+    <blueprints.version>2.3.0</blueprints.version>
+    <jersey.version>1.17</jersey.version>
+    <junit.version>4.5</junit.version>
+</properties>
+<dependencies>
+    <!-- TinkerPop -->
+    <dependency>
+        <groupId>com.tinkerpop.blueprints</groupId>
+        <artifactId>blueprints-core</artifactId>
+        <version>${blueprints.version}</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+        <groupId>com.tinkerpop.rexster</groupId>
+        <artifactId>rexster-core</artifactId>
+        <version>${blueprints.version}</version>
+        <scope>provided</scope>
+    </dependency>
+    <!-- REST SUPPORT -->
+    <dependency>
+        <groupId>com.sun.jersey</groupId>
+        <artifactId>jersey-server</artifactId>
+        <version>${jersey.version}</version>
+        <scope>provided</scope>
+    </dependency>
+    <!-- LOGGING -->
+    <dependency>
+        <groupId>log4j</groupId>
+        <artifactId>log4j</artifactId>
+        <version>1.2.14</version>
+        <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j-version}</version>
+  </dependency>
+  <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-log4j12</artifactId>
+      <version>${slf4j-version}</version>
+  </dependency>
+  <!-- TESTING -->
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <version>${junit.version}</version>
+    <scope>test</scope>
+</dependency>
+<dependency>
+    <groupId>org.jmock</groupId>
+    <artifactId>jmock-junit4</artifactId>
+    <version>2.5.1</version>
+    <scope>test</scope>
+</dependency>
+</dependencies>
+<build>
+    <directory>${basedir}/target</directory>
+    <finalName>${project.artifactId}-${project.version}</finalName>
+    <resources>
+        <resource>
+            <directory>${basedir}/src/main/resources
+            </directory>
+        </resource>
+    </resources>
+    <testResources>
+        <testResource>
+            <directory>${basedir}/src/test/resources
+            </directory>
+        </testResource>
+    </testResources>
+    <plugins>
+        <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.3</version>
+            <executions>
+                <execution>
+                    <phase>package</phase>
+                    <goals>
+                        <goal>attached</goal>
+                    </goals>
+                </execution>
+            </executions>
+            <configuration>
+                <attach>false</attach>
+                <descriptors>
+                    <descriptor>src/assembly/distribution.xml</descriptor>
+                </descriptors>
+                <finalName>d3-kibble-${project.version}</finalName>
+                <outputDirectory>target</outputDirectory>
+                <workDirectory>target/assembly/work</workDirectory>
+                <tarLongFileMode>warn</tarLongFileMode>
+            </configuration>
+        </plugin>
+    </plugins>
+</build>
+</project>

@@ -52,123 +52,111 @@ public class D3Extension extends AbstractRexsterExtension {
     
     private ExtensionResponse getD3Graph(final Graph graph, final String key, final String value, final String depth) {
         logger.info("Looking for vetices that have key: {}, value: {}, depth: {}", key, value, depth);
+        String[] lables = {};
         // process vertices
         Iterable<Vertex> vertices = graph.getVertices(key, value);
 //        Iterable<Vertex> vertices = graph.getVertices();
 //        for(Vertex node : vertices) {
-//            logger.info("Processing vertex: " + node.getProperty(IDENTIFER));
-//            String[] lables = {};
-//            Iterable<Vertex> adj = node.getVertices(Direction.OUT, lables);
-//            for(Vertex connnectedNode : adj) {
-//                logger.info("Node: " + node.getProperty(IDENTIFER) + " is connected to " + connnectedNode.getProperty(IDENTIFER));
+//            
+//            String name = node.getProperty("name");
+//            if(name == null) {
+//                continue;
 //            }
+//            Iterable<Edge> nOutEdges = node.getEdges(Direction.OUT, lables);
+//            Iterable<Edge> nInEdges = node.getEdges(Direction.IN, lables);
+//            int nOutEdgesCount = 0;
+//            for(Edge nOutEdge: nOutEdges) {
+//                nOutEdgesCount++;
+//            }
+////            logger.info("Out Edges: {}", nOutEdgesCount);
+//            int nInEdgesCount = 0;
+//            for(Edge nInEdge: nInEdges) {
+//                nInEdgesCount++;
+//            }
+////            logger.info("In Edges: {}", nInEdgesCount);
+//            
+//            
+//            Iterable<Vertex> adj = node.getVertices(Direction.OUT, lables);
+//            int adjCount = 0;
+//            for(Vertex connnectedNode : adj) {
+//                //logger.info("Node: " + node.getProperty(IDENTIFER) + " is connected to " + connnectedNode.getProperty(IDENTIFER));
+//                adjCount++;
+//            }
+////            logger.info("Adj count: {}", adjCount);
+//            if( name != null && nOutEdgesCount > 2 && nInEdgesCount >= 1)
+//                logger.info("Processing vertex: {} name: {}", node.getProperty(IDENTIFER), name); //nOutEdgesCount, nInEdgesCount);
 //        }
         
         Set<Map<String, Object>> vertexList = new LinkedHashSet<Map<String,Object>>();
         Set<Map<String,Object>> edgeList = new HashSet<Map<String, Object>>();
         List<String> index = new ArrayList<String>();
         
-        String[] labels = {};
+        
         // add nodes
         for(Vertex node : vertices) {
             logger.info("Found matching node {}", node.getProperty(IDENTIFER));
             vertexList.add(processVertex(node, index)); // add root node to list
             // get the adjencnt nodes
-            Iterable<Vertex> adjs = node.getVertices(Direction.OUT, labels);
+            Iterable<Vertex> adjs = node.getVertices(Direction.OUT, lables);
             // add each adjencnt node to the nodes list
             for(Vertex adj: adjs) {
                 vertexList.add(processVertex(adj, index));
                 
                 // add some depth
-                Iterable<Vertex> slAdjs = adj.getVertices(Direction.OUT, labels);
-                for(Vertex slAdj: slAdjs) {
-                    vertexList.add(processVertex(slAdj, index));
+//                Iterable<Vertex> slAdjs = adj.getVertices(Direction.OUT, lables);
+//                for(Vertex slAdj: slAdjs) {
+//                    vertexList.add(processVertex(slAdj, index));
+//                }
+            }
+        }
+        
+        if(depth != null) {
+            // get adjencenies of depth and add them to graph
+            Set<Map<String, Object>> depthVertices = new LinkedHashSet<Map<String,Object>>();
+            for (Map<String, Object> processedVertex : vertexList) {
+                Vertex rawNode = (Vertex) processedVertex.get("_raw");
+                if(rawNode.getProperty(IDENTIFER).toString().equals(depth)) {
+                    logger.info("Adding some depth");
+                    Iterable<Vertex> depthAdjs = rawNode.getVertices(Direction.OUT, lables);
+                    for(Vertex depthAdj: depthAdjs) {
+                        logger.info("Added depth: {}", depthAdj.getProperty(IDENTIFER));
+                        depthVertices.add(processVertex(depthAdj, index));
+                    }
                 }
             }
+            // now merge
+            vertexList.addAll(depthVertices);
+            
         }
         
         logger.info("index: " + ToStringBuilder.reflectionToString(index.toArray()));
         
-        // add edges
-        for(Vertex node: vertices) {
-            logger.info("edges: Found matching node {}", node.getProperty(IDENTIFER));
-            Iterable<Edge> outEdges = node.getEdges(Direction.OUT, labels);
-            for(Edge edge: outEdges) {
-                logger.info("found out edge from {} -> {}",node.getProperty(IDENTIFER), edge.getVertex(Direction.IN).getProperty(IDENTIFER));
-                int srcIdx = index.indexOf((node.getProperty(IDENTIFER)).toString());
-                int destIdx = index.indexOf((edge.getVertex(Direction.IN).getProperty(IDENTIFER)).toString());
-                // store edge props
-                Map<String, Object> edgeProps = new HashMap<String, Object>();
-                edgeProps.put("source", srcIdx);
-                edgeProps.put("target", destIdx);
-                
-                edgeList.add(edgeProps);
-                
-                // add some depth
-                Iterable<Vertex> slOutNodes = edge.getVertex(Direction.IN).getVertices(Direction.OUT, labels);
-                for(Vertex slNode: slOutNodes) {
-                    String sourceMid = slNode.getProperty(IDENTIFER);
-                    logger.info("Found adj: {}", sourceMid);
-                    if (!index.contains(sourceMid)) {
-                        logger.info("new source mid! {}", sourceMid);
+        // make links
+        for(Map<String,Object> processedVertex : vertexList) {
+            Vertex rawNode = (Vertex) processedVertex.get("_raw");
+            if(rawNode != null) {
+                Iterable<Edge> processedEdges = rawNode.getEdges(Direction.OUT, lables);
+                for(Edge processedEdge: processedEdges) {
+                    Vertex range = processedEdge.getVertex(Direction.OUT);
+                    Vertex domain = processedEdge.getVertex(Direction.IN);
+                    
+                    if(domain != null && range != null) {
+                        int srcIdx = index.indexOf((domain.getProperty(IDENTIFER)).toString());
+                        int destIdx = index.indexOf((range.getProperty(IDENTIFER)).toString());
+
+                        if(srcIdx != -1 && destIdx != -1) {
+                            Map<String, Object> edgeProps = new HashMap<String, Object>();
+
+                            edgeProps.put("source", srcIdx);
+                            edgeProps.put("target", destIdx);
+                            logger.info("Adding edge from {} -> {}", srcIdx, destIdx);
+                            edgeList.add(edgeProps);
+                        }
                     }
+
                 }
-//                Iterable<Edge> slOutEdges = edge.getVertex(Direction.OUT).getEdges(Direction.OUT, labels);
-//                for(Edge slEdge: slOutEdges) {
-//                    String sourceMid = slEdge.getVertex(Direction.IN).getProperty(IDENTIFER);
-//                    String destMid = slEdge.getVertex(Direction.OUT).getProperty(IDENTIFER);
-//                    logger.info("depth found out edge {} -> {}", sourceMid, destMid);
-//                    
-//                    if(!index.contains(sourceMid)) {
-//                        logger.info("new source mid! {}", sourceMid);
-//                    }
-//                    if(!index.contains(destMid)) {
-//                        logger.info("new dest mid: {}", destMid);
-//                    }
-//                }
-                
             }
         }
-        /*
-        List<String> index = new ArrayList<String>();
-        for (Vertex node : vertices) {
-            logger.info("Processing matching node");
-            // add to result object
-            vertexList.add(processVertex(node, index));
-
-            String[] lables = {};
-            // process edges
-            Iterable<Edge> edges = node.getEdges(Direction.OUT, lables);
-
-            for (Edge edge : edges) {
-                // store node props
-                Map<String, Object> edgeProps = new HashMap<String, Object>();
-
-                // process domain
-                Vertex domain = edge.getVertex(Direction.IN);
-//                vertexList.add(processVertex(domain, index));
-                
-                // process range
-                Vertex range = edge.getVertex(Direction.IN);
-                logger.info("Processing node: "+ node.getProperty(IDENTIFER) + " with range: " + range.getProperty(IDENTIFER));
-                vertexList.add(processVertex(range, index));
-                
-                // add some depth
-//                Iterable<Edge> edges2 = range.getEdges(Direction.OUT, lables);
-//                for(Edge edge2: edges2) {
-//                    
-//                }
-                
-                int srcId = index.indexOf((domain.getProperty(IDENTIFER)).toString());
-                int destId = index.indexOf((range.getProperty(IDENTIFER)).toString());
-                edgeProps.put("source", srcId);
-                edgeProps.put("target", destId);
-
-                edgeList.add(edgeProps);
-            }
-        }
-        
-        */
         
         Map<String, Set> result = new HashMap<String, Set>();
 
@@ -185,11 +173,14 @@ public class D3Extension extends AbstractRexsterExtension {
        Map<String, Object> vertexProps = new HashMap<String, Object>();
 
        for (String propKey : node.getPropertyKeys()) {
+           logger.info("Adding prop: {} = {}", propKey,  node.getProperty(propKey));
            vertexProps.put(propKey, node.getProperty(propKey));
        }
        vertexProps.put("id", node.getId()); // add the id
        // add to index
        String mid = (String) node.getProperty(IDENTIFER);
+       vertexProps.put(IDENTIFER, mid);
+       vertexProps.put("_raw", node);
 //       logger.info("Index of mid: {} {}", mid, index.indexOf(mid));
        if(index.indexOf(mid) == -1 ) {
            logger.info("Adding index for {}", mid);

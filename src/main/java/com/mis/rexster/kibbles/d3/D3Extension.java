@@ -71,6 +71,10 @@ public class D3Extension extends AbstractRexsterExtension {
         for (Edge edge : edges) {
             // store node props
             Map<String, Object> props = new HashMap<String, Object>();
+
+            for (String key : edge.getPropertyKeys()) {
+                props.put(key, edge.getProperty(key));
+            }
             
             Vertex domain = edge.getVertex(Direction.IN);
             Vertex range = edge.getVertex(Direction.OUT);
